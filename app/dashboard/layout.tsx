@@ -1,7 +1,7 @@
 "use client";
 
-import Sidebar from "@/components/Sidebar";
-import Navbar from "@/components/Navbar";
+import Sidebar from "@/components/layout/Sidebar";
+import Navbar from "@/components/layout/Navbar";
 import { motion } from "framer-motion";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -22,9 +22,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </motion.div>
 
       {/* Content */}
-      <div className="flex-1 p-6 mt-16">
-        {children}
-      </div>
+     
+        <div className="flex-1 p-6 mt-16">
+          {children}
+        </div>
+     
     </div>
   );
 }

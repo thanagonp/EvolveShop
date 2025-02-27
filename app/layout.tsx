@@ -1,10 +1,12 @@
 import "./globals.css";
-
+import ToastProvider from "@/components/toasts/ToastProvider";
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="th">
       <body className="min-h-screen bg-gray-100">
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );
