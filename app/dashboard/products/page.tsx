@@ -12,6 +12,7 @@ import { Info, Edit, Trash } from "lucide-react";
 import { useToast } from "@/components/toasts/useToast";
 
 
+
 export default function ProductPage() {
   interface Product {
     _id: string;
@@ -25,6 +26,7 @@ export default function ProductPage() {
     status: "available" | "unavailable";
   }
   const [isOpen, setIsOpen] = useState(false);
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const addToast = useToast();
@@ -33,6 +35,9 @@ export default function ProductPage() {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  const handleOpenModal = () => setIsOpen(true);
+  const handleCloseModal = () => setIsOpen(false);
 
   const fetchProducts = () => {
     axios.get(`${API_BASE_URL}/list`)
@@ -68,42 +73,65 @@ export default function ProductPage() {
   };
   // 📌 ฟังก์ชันบันทึกสินค้า
   const handleSaveProduct = async (product: any) => {
-    
     try {
       if (!product.images || product.images.length === 0) {
         console.error("❌ กรุณาอัปโหลดรูปภาพอย่างน้อย 1 รูป");
         return;
       }
-
-      const uploadedImages = await uploadImagesToCloudinary(product.images);
-
-      if (!uploadedImages || uploadedImages.length === 0) {
+  
+      // 🔹 แยกรูปใหม่และรูปเก่าออกจากกัน
+      const oldImages = product.oldImages || [];
+      const newImages = product.newImages || [];
+  
+      // 📌 อัปโหลดเฉพาะรูปใหม่ไปยัง Cloudinary
+      let uploadedImages = [...oldImages]; // ใช้รูปเก่าก่อน
+      if (newImages.length > 0) {
+        const newUploadedImages = await uploadImagesToCloudinary(newImages);
+        uploadedImages = [...uploadedImages, ...newUploadedImages]; // รวมรูปใหม่กับรูปเก่า
+      }
+  
+      if (uploadedImages.length === 0) {
         console.error("❌ อัปโหลดรูปภาพไม่สำเร็จ");
         return;
       }
-
-      // ✅ เตรียมข้อมูลสินค้าให้ตรงกับ Model หลังบ้าน
+  
+      // ✅ เตรียมข้อมูลสินค้า
       const productData = {
         name: product.name,
         price: product.price,
         stock: product.stock,
         images: uploadedImages,
-        color: product.color, // ✅ สีเดี่ยว
-        size: product.size, // ✅ ไซส์เดี่ยว
+        color: product.color,
+        size: product.size,
         description: product.description,
-        status: product.status || "available", // ✅ เพิ่มสถานะเริ่มต้นเป็นพร้อมขาย
+        status: product.status || "available",
       };
-
-      const response = await axios.post(`${API_BASE_URL}/products/add`, productData, {
-        headers: { "Content-Type": "application/json" },
-      });
-
+  
+      // 🔹 เช็คว่าเป็น "เพิ่ม" หรือ "แก้ไข"
+      if (product._id) {
+        // 📌 กรณีแก้ไขสินค้า
+        await axios.put(`${API_BASE_URL}/products/update/${product._id}`, productData, {
+          headers: { "Content-Type": "application/json" },
+        });
+        addToast("อัปเดตสินค้าสำเร็จ", "success");
+      } else {
+        // 📌 กรณีเพิ่มสินค้าใหม่
+        await axios.post(`${API_BASE_URL}/products/add`, productData, {
+          headers: { "Content-Type": "application/json" },
+        });
+        addToast("เพิ่มสินค้าสำเร็จ", "success");
+      }
+  
       clearModal();
-      fetchProducts();
-      addToast("✅ เพิ่มสินค้าสำเร็จ", "success");
+      fetchProducts(); // ✅ โหลดรายการสินค้าใหม่
     } catch (error: any) {
       console.error("❌ เกิดข้อผิดพลาด:", error.response?.data || error.message);
     }
+  };
+  
+  const handleEditProduct = async (product: any) => {
+    setSelectedProduct(product);
+    handleOpenModal();
   };
 
   return (
@@ -118,7 +146,14 @@ export default function ProductPage() {
       </button>
   
       {/* ✨ Modal สำหรับเพิ่มสินค้า */}
-      <AddProductModal isOpen={isOpen} onClose={() => setIsOpen(false)} onSave={handleSaveProduct} />
+      <AddProductModal 
+      isOpen={isOpen} 
+      onClose={() => { 
+        setIsOpen(false)
+        setSelectedProduct(null)
+      }} 
+       onSave={handleSaveProduct} 
+       product={selectedProduct} />
   
       <div className="pt-4">
         <h1 className="text-3xl font-bold mb-6">🛍️ รายการสินค้า</h1>
@@ -159,6 +194,7 @@ export default function ProductPage() {
               <button
                 onClick={() => {
                   setSelectedProduct(product);
+                  setIsInfoOpen(true);
                 }}
                 className="absolute top-3 right-3 p-2 rounded-full shadow-md z-20
                           bg-gray-700/40 backdrop-blur-md text-white
@@ -176,7 +212,8 @@ export default function ProductPage() {
                 transition={{ duration: 0.3 }}
               >
                 {/* 🔹 Edit */}
-                <button className="bg-gray-700/40 text-white p-3 rounded-full shadow-md hover:bg-gray-400/50">
+                <button className="bg-gray-700/40 text-white p-3 rounded-full shadow-md hover:bg-gray-400/50"
+                onClick={() => handleEditProduct(product)}>
                   <Edit size={20} />
                 </button>
   
@@ -192,8 +229,10 @@ export default function ProductPage() {
         {/* 🏷️ ใช้ InfoModal แสดงรายละเอียดสินค้า */}
         {selectedProduct && (
           <InfoModal
-            isOpen={!!selectedProduct}
-            onClose={() => setSelectedProduct(null)}
+            isOpen={isInfoOpen}
+            onClose={() => { 
+              setIsInfoOpen(false);
+              setSelectedProduct(null) }}
             product={selectedProduct}
           />
         )}

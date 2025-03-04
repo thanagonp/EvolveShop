@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   },
 
 
-image:{
+images:{
   domains: ['res.cloudinary.com'],
   remotePatterns: [
     {
