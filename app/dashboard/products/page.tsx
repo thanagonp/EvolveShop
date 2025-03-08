@@ -159,18 +159,17 @@ export default function ProductPage() {
         <h1 className="text-3xl font-bold mb-6">🛍️ รายการสินค้า</h1>
   
         {/* 🔹 Grid Layout แสดงสินค้า */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
           {products.map((product, index) => (
             <motion.div
               key={product._id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
-              className="relative w-44 h-64 rounded-lg overflow-hidden shadow-lg transition group"
+              className="relative w-full max-w-xs h-64 rounded-lg overflow-hidden shadow-lg transition group bg-white"
             >
               {/* 🔹 รูปสินค้า */}
               <motion.div className="relative w-full h-full overflow-hidden">
-                {/* 🔹 ภาพสินค้า */}
                 <CldImage
                   src={product.images[0]}
                   alt={product.name}
@@ -180,18 +179,16 @@ export default function ProductPage() {
                   className="w-full h-full object-cover transition-transform duration-300"
                   priority={true}
                 />
-  
-                {/* 🔹 Gradient Overlay มืดเฉพาะขอบบนและล่าง */}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </motion.div>
-  
+
               {/* 🔹 ชื่อสินค้า */}
               <div className="absolute top-3 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-lg text-sm opacity-80">
                 {product.name}
               </div>
-  
-              {/* 🔹 ปุ่ม Info (แสดงตลอด) */}
-              <button
+
+               {/* 🔹 ปุ่ม Info (แสดงตลอด) */}
+               <button
                 onClick={() => {
                   setSelectedProduct(product);
                   setIsInfoOpen(true);
@@ -225,6 +222,7 @@ export default function ProductPage() {
             </motion.div>
           ))}
         </div>
+
   
         {/* 🏷️ ใช้ InfoModal แสดงรายละเอียดสินค้า */}
         {selectedProduct && (

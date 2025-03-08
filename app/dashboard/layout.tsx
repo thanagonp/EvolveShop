@@ -1,32 +1,24 @@
 "use client";
 
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
-import { motion } from "framer-motion";
+import Sidebar from "../../components/layout/Sidebar";
+import Navbar from "../../components/layout/Navbar";
+import { useSidebar } from "@/components/layout/SidebarContext";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { isOpen } = useSidebar();
+
   return (
     <div className="flex min-h-screen">
+      {/* ✅ Fixed Sidebar */}
+      <Sidebar />
 
-      <div className="absolute top-0 left-0 w-full z-10">
-        <Navbar />
+      {/* ✅ Wrapper สำหรับ Content */}
+      <div className="flex flex-col flex-1 min-h-screen">
+        <Navbar /> {/* ✅ แยก Navbar ออกจาก Sidebar */}
+        <main className={`flex-1 p-6 pt-16 transition-all duration-300 ${isOpen ? "ml-[200px]" : "ml-[60px]"}`}>
+        {children}
+      </main>
       </div>
-
-      {/* Sidebar */}
-      <motion.div 
-        initial={{ x: -100, opacity: 0 }} 
-        animate={{ x: 0, opacity: 1 }} 
-        transition={{ duration: 0.5 }} 
-        className="flex h-screen bg-gray-100">
-        <Sidebar />
-      </motion.div>
-
-      {/* Content */}
-     
-        <div className="flex-1 p-6 mt-16">
-          {children}
-        </div>
-     
     </div>
   );
 }
