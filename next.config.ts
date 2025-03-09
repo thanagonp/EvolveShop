@@ -19,15 +19,7 @@ images:{
   ]
 },
 
-webpack: (config) => {
-  config.resolve.alias = {
-    ...config.resolve.alias,
-    "@components": "./components",
-    "utils": "./utils",
-    };
-    return config;
-  },
- 
+
 };
 
 export default nextConfig;

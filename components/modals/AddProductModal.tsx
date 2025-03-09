@@ -176,6 +176,7 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
             value={productData.name}
             onChange={handleChange}
             className="w-full p-2 border rounded-lg"
+            autoComplete="off"
           />
         </div>
 
@@ -188,6 +189,7 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
             value={productData.price}
             onChange={handleChange}
             className="w-full p-2 border rounded-lg"
+            autoComplete="off"
           />
         </div>
 
@@ -200,6 +202,7 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
             value={productData.stock}
             onChange={handleChange}
             className="w-full p-2 border rounded-lg"
+            autoComplete="off"
           />
         </div>
 
@@ -227,6 +230,7 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
             onChange={handleChange}
             placeholder="เช่น ขาว, ดำ, น้ำเงิน"
             className="w-full p-2 border rounded-lg"
+            autoComplete="off"
           />
         </div>
 
@@ -240,6 +244,7 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
             onChange={handleChange}
             placeholder="เช่น S, M, L, XL"
             className="w-full p-2 border rounded-lg"
+            autoComplete="off"
           />
         </div>
 
@@ -252,6 +257,7 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
             onChange={handleChange}
             className="w-full p-2 border rounded-lg"
             placeholder="เช่น วัสดุที่ใช้, รอบอก, รอบเอว, ปีที่ผลิต ฯลฯ"
+            autoComplete="off"
           />
         </div>
       </motion.div>
@@ -305,12 +311,12 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
         </div>
 
         <ConfirmAlert
-  isOpen={isConfirmOpen}
-  onClose={() => setIsConfirmOpen(false)}
-  onConfirm={handleConfirmDelete}
-  title="ยืนยันการลบรูป"
-  message="คุณแน่ใจหรือไม่ว่าต้องการลบรูปนี้? การลบรูปจะไม่สามารถกู้คืนได้"
-/>
+          isOpen={isConfirmOpen}
+          onClose={() => setIsConfirmOpen(false)}
+          onConfirm={handleConfirmDelete}
+          title="ยืนยันการลบรูป"
+          message="คุณแน่ใจหรือไม่ว่าต้องการลบรูปนี้? การลบรูปจะไม่สามารถกู้คืนได้"
+        />
 
 
 

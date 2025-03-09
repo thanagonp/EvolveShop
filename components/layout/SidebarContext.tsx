@@ -11,8 +11,11 @@ const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState<boolean>(true);
+  const [hydrated, setHydrated] = useState(false); // ✅ ป้องกัน Hydration Error
 
+  // ✅ ใช้ useEffect โหลดค่า isOpen จาก localStorage หลังจากที่ Component ถูก Mount
   useEffect(() => {
+    setHydrated(true);
     if (typeof window !== "undefined") {
       const storedIsOpen = localStorage.getItem("sidebarOpen");
       if (storedIsOpen !== null) {
@@ -29,6 +32,8 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  if (!hydrated) return null; // ✅ รอให้ Hydration เสร็จก่อน
+
   return (
     <SidebarContext.Provider value={{ isOpen, toggleSidebar }}>
       {children}
@@ -44,3 +49,4 @@ export function useSidebar() {
   }
   return context;
 }
+

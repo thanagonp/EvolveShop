@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect,useRef } from "react";
 import axios from "axios";
 import { PlusCircle } from "lucide-react";
 import AddProductModal from "@/components/modals/AddProductModal";
@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 import { CldImage } from "next-cloudinary";
 import { Info, Edit, Trash } from "lucide-react";
 import { useToast } from "@/components/toasts/useToast";
-
+import ConfirmAlert from "@/components/alerts/ConfirmAlert";
 
 
 export default function ProductPage() {
@@ -30,10 +30,16 @@ export default function ProductPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const addToast = useToast();
+  const isFetched = useRef(false); // ✅ ใช้ useRef ป้องกันโหลดซ้ำ
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
 
   // 📌 ดึงข้อมูลสินค้าจาก API เมื่อโหลดหน้า
   useEffect(() => {
-    fetchProducts();
+    if (!isFetched.current) {
+      isFetched.current = true; // ✅ ป้องกัน API ถูกเรียกซ้ำ
+      fetchProducts();
+    }
   }, []);
 
   const handleOpenModal = () => setIsOpen(true);
@@ -134,6 +140,30 @@ export default function ProductPage() {
     handleOpenModal();
   };
 
+  // 📌 เปิด Modal ยืนยันการลบสินค้า
+const handleOpenDeleteModal = (productId: string) => {
+  setDeleteProductId(productId);
+  setIsDeleteOpen(true);
+};
+
+// 📌 ฟังก์ชันลบสินค้า
+const handleDeleteProduct = async () => {
+  if (!deleteProductId) return;
+
+  try {
+    await axios.delete(`${API_BASE_URL}/delete/${deleteProductId}`);
+    setProducts(products.filter((product) => product._id !== deleteProductId));
+    addToast("✅ ลบสินค้าสำเร็จ!", "success");
+  } catch (error) {
+    console.error("❌ ลบสินค้าล้มเหลว:", error);
+    addToast("❌ ไม่สามารถลบสินค้าได้", "error");
+  }
+
+  setIsDeleteOpen(false); // ปิด Modal หลังจากลบสินค้า
+};
+
+  
+
   return (
     <div className="container mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold">📦 รายการสินค้า</h1>
@@ -215,7 +245,10 @@ export default function ProductPage() {
                 </button>
   
                 {/* 🔹 Delete */}
-                <button className="bg-red-500 text-white p-3 rounded-full shadow-md">
+                <button
+                  className="bg-red-500 text-white p-3 rounded-full shadow-md hover:bg-red-600"
+                  onClick={() => handleOpenDeleteModal(product._id)}
+                >
                   <Trash size={20} />
                 </button>
               </motion.div>
@@ -234,6 +267,15 @@ export default function ProductPage() {
             product={selectedProduct}
           />
         )}
+
+        <ConfirmAlert
+          isOpen={isDeleteOpen}
+          onClose={() => setIsDeleteOpen(false)}
+          onConfirm={handleDeleteProduct}
+          title="ยืนยันการลบสินค้า"
+          message="คุณแน่ใจหรือไม่ที่ต้องการลบสินค้านี้? การลบจะไม่สามารถกู้คืนได้"
+        />
+
       </div>
     </div>
   );  
