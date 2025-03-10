@@ -24,7 +24,6 @@ export default function ProductList() {
   useEffect(() => {
     axios.get(`${API_BASE_URL}/list`)
       .then((response) => {
-        console.log("✅ สินค้า:", response.data);
         setProducts(response.data);
       })
       .catch((error) => console.error("❌ โหลดสินค้าล้มเหลว:", error));

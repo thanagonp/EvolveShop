@@ -12,7 +12,6 @@ import { Info, Edit, Trash } from "lucide-react";
 import { useToast } from "@/components/toasts/useToast";
 import ConfirmAlert from "@/components/alerts/ConfirmAlert";
 
-
 export default function ProductPage() {
   interface Product {
     _id: string;
@@ -29,10 +28,10 @@ export default function ProductPage() {
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
-  const addToast = useToast();
+  const { showToast } = useToast();
   const isFetched = useRef(false); // ✅ ใช้ useRef ป้องกันโหลดซ้ำ
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
+  const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
 
   // 📌 ดึงข้อมูลสินค้าจาก API เมื่อโหลดหน้า
   useEffect(() => {
@@ -119,13 +118,13 @@ const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
         await axios.put(`${API_BASE_URL}/products/update/${product._id}`, productData, {
           headers: { "Content-Type": "application/json" },
         });
-        addToast("อัปเดตสินค้าสำเร็จ", "success");
+        showToast("อัปเดตสินค้าสำเร็จ", "success");
       } else {
         // 📌 กรณีเพิ่มสินค้าใหม่
         await axios.post(`${API_BASE_URL}/products/add`, productData, {
           headers: { "Content-Type": "application/json" },
         });
-        addToast("เพิ่มสินค้าสำเร็จ", "success");
+        showToast("เพิ่มสินค้าสำเร็จ", "success");
       }
   
       clearModal();
@@ -153,10 +152,10 @@ const handleDeleteProduct = async () => {
   try {
     await axios.delete(`${API_BASE_URL}/delete/${deleteProductId}`);
     setProducts(products.filter((product) => product._id !== deleteProductId));
-    addToast("✅ ลบสินค้าสำเร็จ!", "success");
+    showToast("✅ ลบสินค้าสำเร็จ!", "success");
   } catch (error) {
     console.error("❌ ลบสินค้าล้มเหลว:", error);
-    addToast("❌ ไม่สามารถลบสินค้าได้", "error");
+    showToast("❌ ไม่สามารถลบสินค้าได้", "error");
   }
 
   setIsDeleteOpen(false); // ปิด Modal หลังจากลบสินค้า

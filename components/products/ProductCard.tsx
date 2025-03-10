@@ -35,7 +35,7 @@ export default function ProductCard({ product }: { product: Product }) {
     />
     <div className="p-4 flex flex-col justify-between flex-1">
         <h2 className="text-lg font-bold">{product.name}</h2>
-        <p className="text-gray-600">{product.price} บาท</p>
+        <p className="text-gray-600">{product.price.toLocaleString()} บาท</p>
     </div>
     </motion.div>
   );

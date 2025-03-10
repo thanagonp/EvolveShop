@@ -6,6 +6,8 @@ import { API_BASE_URL } from "@/config";
 import { CldImage } from "next-cloudinary";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { useCart } from "@/app/context/CartContext";
+import { useToast } from "@/components/toasts/useToast";
 
 interface Product {
   _id: string;
@@ -24,12 +26,40 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [added, setAdded] = useState(false);
 
   const router = useRouter(); // ✅ ใช้ useRouter
+  const { addToCart } = useCart(); // ✅ ใช้ useCart
+  const { showToast } = useToast();
+
+if (!showToast) {
+  console.error("❌ ไม่พบฟังก์ชัน showToast, ตรวจสอบการใช้ ToastProvider");
+}
+
 
   // ✅ ฟังก์ชันกลับไปที่หน้า /store
   const goToStore = () => {
     router.push("/store");
+  };
+
+  // ✅ ฟังก์ชันเพิ่มสินค้าลงตะกร้า
+  const handleAddToCart = () => {
+    if (!product) return; // ✅ ป้องกัน product เป็น null
+
+    addToCart({
+      id: product._id,
+      name: product.name,
+      price: product.price,
+      image: product.images?.[0] || "", // ✅ ป้องกัน images เป็น undefined
+      quantity: 1,
+    });
+
+    setAdded(true); // ✅ เปลี่ยนปุ่มเป็น "เพิ่มแล้ว!"
+    showToast("✅ เพิ่มสินค้าลงตะกร้าสำเร็จ!", "success"); // ✅ แสดง Toast แจ้งเตือน
+
+    setTimeout(() => {
+      setAdded(false);
+    }, 2000); // ✅ กำหนดเวลาให้ปุ่มกลับเป็นปกติ
   };
 
   useEffect(() => {
@@ -123,8 +153,13 @@ export default function ProductPage() {
           )}
 
           {/* ปุ่มเพิ่มลงตะกร้า */}
-          <button className="mt-6 px-4 py-2 bg-blue-500 text-white rounded-lg w-full">
-            เพิ่มลงตะกร้า
+          <button 
+            onClick={handleAddToCart}
+            className={`mt-6 px-4 py-2 text-white rounded-lg w-full 
+              ${added ? "bg-green-500 cursor-default" : "bg-blue-500 cursor-pointer"}`}
+            disabled={added} // ✅ ป้องกันการกดซ้ำ
+          >
+            {added ? "✔️ เพิ่มแล้ว!" : "เพิ่มลงตะกร้า"}
           </button>
 
            {/* ✅ ปุ่มกลับไปหน้าหลัก */}
