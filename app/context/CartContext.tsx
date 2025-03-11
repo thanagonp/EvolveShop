@@ -1,32 +1,23 @@
 "use client";
 
-import { createContext, useState, useContext, useEffect, ReactNode } from "react";
-
-// 📌 Interface สำหรับสินค้าในตะกร้า
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  quantity: number;
-}
-
-// 📌 Interface สำหรับ Context
-interface CartContextType {
-  cart: CartItem[];
-  addToCart: (item: CartItem) => void;
-  removeFromCart: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
-  clearCart: () => void;
-  totalAmount: number;
-}
+import { createContext, useState, useContext, useEffect, useRef, useCallback, ReactNode } from "react";
+import axios from "axios";
+import { API_BASE_URL } from "@/config";
+import { useToast } from "@/components/toasts/useToast";
+import { CartItem, CartContextType } from "@/lib/types/interface";
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const { showToast } = useToast();
+  const isProcessing = useRef(false); // ✅ ป้องกันการเรียกซ้ำ
+  const toastQueue = useRef<string | null>(null); // ✅ เก็บข้อความ Toast ไว้ก่อน
+  const [isToastReady, setIsToastReady] = useState(false); // ✅ ใช้สำหรับแสดง Toast หลัง Render เสร็จ
+  const isToastDisplayed = useRef(false);
 
-  // ✅ โหลดข้อมูลตะกร้าจาก LocalStorage เมื่อโหลดหน้าใหม่
+
+  // ✅ โหลดข้อมูลจาก LocalStorage
   useEffect(() => {
     const storedCart = localStorage.getItem("cart");
     if (storedCart) {
@@ -34,43 +25,103 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // ✅ อัปเดต LocalStorage ทุกครั้งที่มีการเปลี่ยนแปลงตะกร้า
+  // ✅ อัปเดต LocalStorage เมื่อ `cart` เปลี่ยนแปลง
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
-  
-  // ✅ ฟังก์ชันคำนวณยอดรวมสินค้า
+  // ✅ แสดง Toast เมื่อพร้อม
+  useEffect(() => {
+    if (isToastReady && toastQueue.current) {
+      showToast(toastQueue.current, "success");
+      toastQueue.current = null;
+      setIsToastReady(false);
+    }
+  }, [isToastReady]);
+
   const totalAmount = cart.reduce((total, item) => total + item.price * item.quantity, 0);
 
- // ✅ เพิ่มสินค้า
- const addToCart = (item: CartItem) => {
-    setCart((prev) => {
-      const existingItem = prev.find((i) => i.id === item.id);
-      if (existingItem) {
-        return prev.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i));
-      } else {
-        return [...prev, { ...item, quantity: 1 }];
+  // ✅ เพิ่มสินค้า (เช็คสต็อกก่อนเพิ่ม)
+  const addToCart = useCallback(async (product: CartItem) => {
+    if (isProcessing.current) return;
+    isProcessing.current = true;
+  
+    try {
+      const response = await axios.get(`${API_BASE_URL}/products/${product.id}/stock`);
+      const availableStock = response.data.stock;
+  
+      if (availableStock < 1) {
+        showToast("❌ สินค้าในสต็อกมีไม่พอ", "error");
+        isProcessing.current = false;
+        return;
       }
-    });
-  };
+  
+      let isItemAdded = false;
+      let updatedCart: CartItem[] = [];
+  
+      setCart((prevCart) => {
+        updatedCart = [...prevCart];
+  
+        for (let i = 0; i < updatedCart.length; i++) {
+          if (updatedCart[i].id === product.id) {
+            if (updatedCart[i].quantity + 1 > availableStock) {
+              showToast("❌ สินค้าในสต็อกมีไม่พอ", "error");
+              isProcessing.current = false;
+              return prevCart;
+            }
+            updatedCart[i].quantity += 1;
+            isItemAdded = true;
+          }
+        }
+  
+        if (!isItemAdded) {
+          updatedCart.push({ ...product, quantity: 1 });
+        }
+  
+        return updatedCart;
+      });
+  
+      // ✅ เรียก Toast หลังจาก cart อัปเดตเสร็จ
+      setTimeout(() => {
+        showToast("✅ เพิ่มสินค้าลงตะกร้าสำเร็จ!", "success");
+      }, 100); 
+  
+    } catch (error) {
+      console.error("❌ ไม่สามารถดึงข้อมูลสต็อก:", error);
+    } finally {
+      setTimeout(() => {
+        isProcessing.current = false;
+      }, 500);
+    }
+  }, []);
+  
+  
 
-  // ✅ ลบสินค้า
-  const removeFromCart = (id: string) => {
+  const removeFromCart = useCallback((id: string) => {
     setCart((prev) => prev.filter((item) => item.id !== id));
-  };
+  }, []);
 
-  // ✅ อัปเดตจำนวนสินค้า
-  const updateQuantity = (id: string, quantity: number) => {
-    setCart((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity } : item))
-    );
-  };
+  const updateQuantity = useCallback(async (id: string, quantity: number) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/products/${id}/stock`);
+      const availableStock = response.data.stock;
 
-  // ✅ ล้างตะกร้า
-  const clearCart = () => {
+      if (quantity > availableStock) {
+        showToast("❌ สินค้าในสต็อกมีไม่พอ", "error");
+        return;
+      }
+
+      setCart((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, quantity } : item))
+      );
+    } catch (error) {
+      console.error("❌ ไม่สามารถดึงข้อมูลสต็อก:", error);
+    }
+  }, []);
+
+  const clearCart = useCallback(() => {
     setCart([]);
-  };
+  }, []);
 
   return (
     <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, totalAmount }}>
@@ -79,7 +130,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// 📌 Hook ใช้เรียก Context API
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {

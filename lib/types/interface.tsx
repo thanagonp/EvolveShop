@@ -30,5 +30,38 @@ export interface OrderItem {
     createdAt?: string;
     updatedAt?: string;
   }
+
+  export interface Product {
+    _id: string;
+    name: string;
+    price: number;
+    stock: number;
+    images: string[];
+    color: string;
+    size: string;
+    description?: string;
+    status: "available" | "unavailable";
+  }
+
+  // 📌 Interface สำหรับสินค้าในตะกร้า
+export interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  quantity: number;
+  stock: number;
+}
+
+// 📌 Interface สำหรับ Context ตะกร้าสินค้า
+export interface CartContextType {
+  cart: CartItem[];
+  addToCart: (item: CartItem) => void;
+  removeFromCart: (id: string) => void;
+  updateQuantity: (id: string, quantity: number) => void;
+  clearCart: () => void;
+  totalAmount: number;
+}
+
   
   
