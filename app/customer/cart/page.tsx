@@ -6,6 +6,7 @@ import { CldImage } from "next-cloudinary";
 import { motion } from "framer-motion";
 import { Trash, Plus, Minus, ShoppingCart } from "lucide-react";
 
+
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, totalAmount ,clearCart } = useCart();
   const router = useRouter();

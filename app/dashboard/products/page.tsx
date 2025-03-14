@@ -45,7 +45,7 @@ export default function ProductPage() {
   const handleCloseModal = () => setIsOpen(false);
 
   const fetchProducts = () => {
-    axios.get(`${API_BASE_URL}/list`)
+    axios.get(`${API_BASE_URL}/products/list`)
       .then((response) => setProducts([...response.data]))
       .catch((error) => console.error("❌ โหลดสินค้าล้มเหลว:", error));
   };

@@ -22,7 +22,7 @@ export default function ProductList() {
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/list`)
+    axios.get(`${API_BASE_URL}/products/list`)
       .then((response) => {
         setProducts(response.data);
       })
