@@ -43,6 +43,12 @@ export interface OrderItem {
     status: "available" | "unavailable";
   }
 
+  export interface EditableProduct extends Product {
+    oldImages: string[]; // ✅ รูปภาพเก่าที่เป็น URL
+    newImages: File[];   // ✅ รูปภาพใหม่ที่เป็นไฟล์
+  }
+  
+
   // 📌 Interface สำหรับสินค้าในตะกร้า
 export interface CartItem {
   id: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { User, LogOut } from "lucide-react";
+import { User } from "lucide-react";
 
 export default function Navbar() {
   return (

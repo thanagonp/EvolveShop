@@ -7,32 +7,33 @@ import { useToast } from "@/components/toasts/useToast";
 import axios from "axios";
 import { API_BASE_URL } from "@/config";
 import ConfirmAlert from "@/components/alerts/ConfirmAlert";
+import { Product, EditableProduct } from "@/lib/types/interface";
 
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (product: any) => void;
-  product?: any;
+  onSave: (product: Product) => void; // ✅ กำหนด type ที่ถูกต้อง
+  product?: Product;
 }
 
 export default function AddProductModal({ isOpen, onClose, onSave, product }: AddProductModalProps) {
-  const [productData, setProductData] = useState({
-    _id: "",  // ✅ เพิ่ม `_id` ตรงนี้
+
+  const [productData, setProductData] = useState<EditableProduct>({
+    _id: "",
     name: "",
-    price: "",
-    stock: "",
-    color: "",  
-    size: "",  
+    price: 0,
+    stock: 0,
+    color: "",
+    size: "",
     description: "",
-    oldImages: [] as string[], // ✅ เก็บรูปเดิม (URL)
-    newImages: [] as File[],  // ✅ เก็บรูปใหม่ (ไฟล์ที่อัปโหลด)
+    images: [],
+    oldImages: [], // ✅ ต้องมี oldImages
+    newImages: [], // ✅ ต้องมี newImages
     status: "available",
   });
-  const addToast = useToast();
+  const { showToast } = useToast();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [imageToDelete, setImageToDelete] = useState<{ index: number, isOld: boolean } | null>(null);
-
-  
 
   const confirmRemoveImage = (index: number, isOld: boolean) => {
     setImageToDelete({ index, isOld });
@@ -48,32 +49,35 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
   useEffect(() => {
     if (product) {
       setProductData({
-        _id: product._id || "", // ✅ เพิ่มการรับค่า `_id`
+        _id: product._id || "",
         name: product.name || "",
-        price: product.price || "",
-        stock: product.stock || "",
+        price: Number(product.price) || 0,
+        stock: Number(product.stock) || 0,
         color: product.color || "",
         size: product.size || "",
         description: product.description || "",
-        oldImages: product.images || [], 
+        images: product.images || [], // ✅ เพิ่ม images ให้ครบ
+        oldImages: product.images ? [...product.images] : [], 
         newImages: [],
         status: product.status || "available",
       });
     } else {
       setProductData({
-        _id: "", // ✅ รีเซ็ต `_id` เป็นค่าว่าง เมื่อเป็นสินค้าใหม่
+        _id: "",
         name: "",
-        price: "",
-        stock: "",
+        price: 0,
+        stock: 0,
         color: "",
         size: "",
         description: "",
+        images: [], // ✅ ต้องมี field นี้
         oldImages: [],
         newImages: [],
         status: "available",
       });
     }
   }, [product]);
+  
   
   // 📌 ฟังก์ชันจัดการการเปลี่ยนแปลงค่าในฟอร์ม
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -96,47 +100,57 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
     }
   };
   
-
   // 📌 ฟังก์ชันลบรูปภาพที่เลือก
-  const removeImage = async (index: number, isOld: boolean) => {
+  // 📌 ฟังก์ชันลบรูปภาพที่เลือก
+const removeImage = async (index: number, isOld: boolean) => {
+  // ✅ ตรวจสอบว่ามีรูปเหลือมากกว่า 1 รูปหรือไม่
+  if (productData.oldImages.length + productData.newImages.length <= 1) {
+    showToast("⚠️ ไม่สามารถลบรูปสุดท้ายได้", "warning");
+    return;
+  }
+
   if (isOld) {
     const imageUrl = productData.oldImages[index];
     const filename = imageUrl.split("/").pop()?.split(".")[0]; // ดึงเฉพาะชื่อไฟล์
 
     if (!filename) {
-      addToast("เกิดข้อผิดพลาดในการดึงชื่อไฟล์", "error");
+      showToast("❌ ไม่สามารถดึงชื่อไฟล์ได้", "error");
       return;
     }
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/products/delete-image`, { publicId: filename,productId: productData._id });
+      const response = await axios.post(`${API_BASE_URL}/products/delete-image`, {
+        publicId: filename,
+        productId: productData._id
+      });
 
       if (response.status === 200) {
-        addToast("ลบภาพสำเร็จ", "success");
+        showToast("✅ ลบภาพสำเร็จ", "success");
 
-        setProductData((prev) => ({
-          ...prev,
-          oldImages: prev.oldImages.filter((_, i) => i !== index),
-        }));
+         // ✅ อัปเดตรูปภาพหลังจากลบสำเร็จ
+         setProductData((prev) => {
+          const updatedOldImages = prev.oldImages.filter((_, i) => i !== index);
+          return { ...prev, oldImages: updatedOldImages };
+        });
       } else {
-        addToast("ลบภาพล้มเหลว", "error");
+        showToast("❌ ลบภาพไม่สำเร็จ", "error");
       }
     } catch (error) {
       console.error("❌ API ลบภาพล้มเหลว:", error);
-      addToast("เกิดข้อผิดพลาดในการลบรูป", "error");
+      showToast("❌ เกิดข้อผิดพลาดในการลบรูป", "error");
     }
   } else {
     setProductData((prev) => ({
       ...prev,
       newImages: prev.newImages.filter((_, i) => i !== index),
     }));
+    showToast("✅ ลบภาพใหม่สำเร็จ", "success");
   }
 };
 
-  
   // 📌 ฟังก์ชันบันทึกข้อมูลสินค้า
   const handleSave = () => {
-    if (!productData.name || !productData.price || !productData.stock || !productData.color || !productData.size) {
+    if (!productData.name || !productData.price || !productData.stock) {
       alert("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
@@ -146,14 +160,12 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
       return;
     }
   
-    const updatedProduct = {
+    // ✅ ส่งทั้ง oldImages (URL) และ newImages (ไฟล์) ไปที่ onSave
+    const updatedProduct: EditableProduct = {
       ...productData,
-      images: [...productData.oldImages, ...productData.newImages],
+      oldImages: [...productData.oldImages],
+      newImages: [...productData.newImages],
     };
-  
-    if (productData._id) { // ✅ ตรวจสอบว่า `_id` มีค่าหรือไม่
-      updatedProduct._id = productData._id;
-    }
   
     onSave(updatedProduct);
     onClose();

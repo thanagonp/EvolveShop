@@ -11,19 +11,10 @@ import { CldImage } from "next-cloudinary";
 import { Info, Edit, Trash } from "lucide-react";
 import { useToast } from "@/components/toasts/useToast";
 import ConfirmAlert from "@/components/alerts/ConfirmAlert";
+import { Product } from "@/lib/types/interface";
 
 export default function ProductPage() {
-  interface Product {
-    _id: string;
-    name: string;
-    price: number;
-    stock: number;
-    images: string[];
-    color: string;
-    size: string;
-    description?: string;
-    status: "available" | "unavailable";
-  }
+  
   const [isOpen, setIsOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -42,7 +33,6 @@ export default function ProductPage() {
   }, []);
 
   const handleOpenModal = () => setIsOpen(true);
-  const handleCloseModal = () => setIsOpen(false);
 
   const fetchProducts = () => {
     axios.get(`${API_BASE_URL}/products/list`)
@@ -79,48 +69,59 @@ export default function ProductPage() {
   // 📌 ฟังก์ชันบันทึกสินค้า
   const handleSaveProduct = async (product: any) => {
     try {
-      if (!product.images || product.images.length === 0) {
+      console.log("🔍 Debug: ข้อมูลสินค้า", product);
+  
+      // ✅ รวมภาพเก่า + ภาพใหม่ก่อนเช็ค
+      const oldImages = product.oldImages || [];
+      const newImages = product.newImages || [];
+      let uploadedImages = [...oldImages];
+  
+      console.log("🔍 Debug: รูปภาพเก่า", oldImages);
+      console.log("🔍 Debug: รูปภาพใหม่", newImages);
+  
+      // ✅ ตรวจสอบว่ามีภาพอย่างน้อย 1 รูปหลังรวม oldImages + newImages
+      if (oldImages.length === 0 && newImages.length === 0) {
         console.error("❌ กรุณาอัปโหลดรูปภาพอย่างน้อย 1 รูป");
         return;
       }
   
-      // 🔹 แยกรูปใหม่และรูปเก่าออกจากกัน
-      const oldImages = product.oldImages || [];
-      const newImages = product.newImages || [];
-  
-      // 📌 อัปโหลดเฉพาะรูปใหม่ไปยัง Cloudinary
-      let uploadedImages = [...oldImages]; // ใช้รูปเก่าก่อน
+      // 📌 อัปโหลดรูปใหม่ไปยัง Cloudinary
       if (newImages.length > 0) {
         const newUploadedImages = await uploadImagesToCloudinary(newImages);
-        uploadedImages = [...uploadedImages, ...newUploadedImages]; // รวมรูปใหม่กับรูปเก่า
+        console.log("✅ Debug: รูปที่อัปโหลดใหม่สำเร็จ", newUploadedImages);
+        uploadedImages = [...uploadedImages, ...newUploadedImages]; // รวมภาพใหม่กับเก่า
       }
   
+      // ✅ ตรวจสอบอีกครั้งหลังอัปโหลด
       if (uploadedImages.length === 0) {
         console.error("❌ อัปโหลดรูปภาพไม่สำเร็จ");
         return;
       }
   
-      // ✅ เตรียมข้อมูลสินค้า
+      // ✅ เตรียมข้อมูลสินค้าใหม่
       const productData = {
+        _id: product._id,
         name: product.name,
         price: product.price,
         stock: product.stock,
-        images: uploadedImages,
+        images: uploadedImages, // ✅ ใช้ภาพที่รวม oldImages + newImages แล้ว
         color: product.color,
         size: product.size,
         description: product.description,
         status: product.status || "available",
       };
   
+      console.log("✅ อัปเดตสินค้า:", productData);
+  
       // 🔹 เช็คว่าเป็น "เพิ่ม" หรือ "แก้ไข"
       if (product._id) {
-        // 📌 กรณีแก้ไขสินค้า
+        // 📌 อัปเดตสินค้า
         await axios.put(`${API_BASE_URL}/products/update/${product._id}`, productData, {
           headers: { "Content-Type": "application/json" },
         });
         showToast("อัปเดตสินค้าสำเร็จ", "success");
       } else {
-        // 📌 กรณีเพิ่มสินค้าใหม่
+        // 📌 เพิ่มสินค้าใหม่
         await axios.post(`${API_BASE_URL}/products/add`, productData, {
           headers: { "Content-Type": "application/json" },
         });
@@ -133,6 +134,7 @@ export default function ProductPage() {
       console.error("❌ เกิดข้อผิดพลาด:", error.response?.data || error.message);
     }
   };
+  
   
   const handleEditProduct = async (product: any) => {
     setSelectedProduct(product);
@@ -150,7 +152,7 @@ const handleDeleteProduct = async () => {
   if (!deleteProductId) return;
 
   try {
-    await axios.delete(`${API_BASE_URL}/delete/${deleteProductId}`);
+    await axios.delete(`${API_BASE_URL}/products/delete/${deleteProductId}`);
     setProducts(products.filter((product) => product._id !== deleteProductId));
     showToast("✅ ลบสินค้าสำเร็จ!", "success");
   } catch (error) {

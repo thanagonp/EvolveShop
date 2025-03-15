@@ -11,11 +11,9 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const { showToast } = useToast();
-  const isProcessing = useRef(false); // ✅ ป้องกันการเรียกซ้ำ
-  const toastQueue = useRef<string | null>(null); // ✅ เก็บข้อความ Toast ไว้ก่อน
-  const [isToastReady, setIsToastReady] = useState(false); // ✅ ใช้สำหรับแสดง Toast หลัง Render เสร็จ
-  const isToastDisplayed = useRef(false);
-
+  const isProcessing = useRef(false);
+  const toastQueue = useRef<string | null>(null);
+  const [isToastReady, setIsToastReady] = useState(false);
 
   // ✅ โหลดข้อมูลจาก LocalStorage
   useEffect(() => {
@@ -37,7 +35,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       toastQueue.current = null;
       setIsToastReady(false);
     }
-  }, [isToastReady]);
+  }, [isToastReady, showToast]); // ✅ เพิ่ม `showToast` ใน dependency array
 
   const totalAmount = cart.reduce((total, item) => total + item.price * item.quantity, 0);
 
@@ -45,23 +43,23 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const addToCart = useCallback(async (product: CartItem) => {
     if (isProcessing.current) return;
     isProcessing.current = true;
-  
+
     try {
-      const response = await axios.get(`${API_BASE_URL}/products/${product.id}/stock`);
+      const response = await axios.get<{ stock: number }>(`${API_BASE_URL}/products/${product.id}/stock`);
       const availableStock = response.data.stock;
-  
+
       if (availableStock < 1) {
         showToast("❌ สินค้าในสต็อกมีไม่พอ", "error");
         isProcessing.current = false;
         return;
       }
-  
+
       let isItemAdded = false;
       let updatedCart: CartItem[] = [];
-  
+
       setCart((prevCart) => {
         updatedCart = [...prevCart];
-  
+
         for (let i = 0; i < updatedCart.length; i++) {
           if (updatedCart[i].id === product.id) {
             if (updatedCart[i].quantity + 1 > availableStock) {
@@ -73,37 +71,37 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             isItemAdded = true;
           }
         }
-  
+
         if (!isItemAdded) {
           updatedCart.push({ ...product, quantity: 1 });
         }
-  
+
         return updatedCart;
       });
-  
+
       // ✅ เรียก Toast หลังจาก cart อัปเดตเสร็จ
       setTimeout(() => {
         showToast("✅ เพิ่มสินค้าลงตะกร้าสำเร็จ!", "success");
-      }, 100); 
-  
-    } catch (error) {
+      }, 100);
+
+    } catch (error: unknown) {
       console.error("❌ ไม่สามารถดึงข้อมูลสต็อก:", error);
     } finally {
       setTimeout(() => {
         isProcessing.current = false;
       }, 500);
     }
-  }, []);
-  
-  
+  }, [showToast]); // ✅ เพิ่ม `showToast` ใน dependency array
 
+  // ✅ ลบสินค้าออกจากตะกร้า
   const removeFromCart = useCallback((id: string) => {
     setCart((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
+  // ✅ อัปเดตจำนวนสินค้าในตะกร้า (ตรวจสอบ stock)
   const updateQuantity = useCallback(async (id: string, quantity: number) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/products/${id}/stock`);
+      const response = await axios.get<{ stock: number }>(`${API_BASE_URL}/products/${id}/stock`);
       const availableStock = response.data.stock;
 
       if (quantity > availableStock) {
@@ -114,11 +112,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       setCart((prev) =>
         prev.map((item) => (item.id === id ? { ...item, quantity } : item))
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ ไม่สามารถดึงข้อมูลสต็อก:", error);
     }
-  }, []);
+  }, [showToast]); // ✅ เพิ่ม `showToast` ใน dependency array
 
+  // ✅ ล้างตะกร้าสินค้า
   const clearCart = useCallback(() => {
     setCart([]);
   }, []);
