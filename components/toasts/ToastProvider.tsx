@@ -3,7 +3,11 @@ import { createContext, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import Toast, { ToastProps } from "./Toast";
 
-export const ToastContext = createContext<any>(null);
+interface ToastContextType {
+  showToast: (message: string, type?: "success" | "error" | "warning" | "info") => void;
+}
+
+export const ToastContext = createContext<ToastContextType | null>(null);
 
 const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const [toasts, setToasts] = useState<ToastProps[]>([]);
