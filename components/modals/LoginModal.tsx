@@ -23,10 +23,8 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       const authData = hash.replace("#tgAuthResult=", "");
       console.log("🔹 Telegram Auth Result:", authData);
   
-      // ✅ เก็บค่าไว้ใน localStorage
       localStorage.setItem("tgAuthResult", authData);
   
-      // ✅ ส่งไปที่ Backend
       fetch(`${API_BASE_URL}/api/auth/telegram/callback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -37,20 +35,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           if (data.success) {
             console.log("✅ Login Success:", data);
   
-            // ✅ ลบ Fragment ออกจาก URL
             window.history.replaceState(null, "", window.location.pathname);
-  
-            // ✅ Redirect ไป `/customer/store`
-            router.replace("/customer/store");
+            router.replace("/customer/store");  // ✅ router อยู่ใน dependency array
           } else {
             console.error("❌ Login Failed:", data.message);
           }
         })
         .catch((err) => console.error("❌ API Error:", err));
     }
-  }, []);
+  }, [router]); // ✅ เพิ่ม router เข้าไปใน dependency array
   
-
   // ✅ ใช้ bot_id แทน bot_username
   const handleTelegramLogin = () => {
     console.log("🔍 API_BASE_URL:", API_BASE_URL);
@@ -67,7 +61,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     console.log("📌 Expected redirect URI:", redirectUrl);
     window.location.href = authUrl;
 };
-
 
   return (
     <BaseModal isOpen={isOpen} title="🔑 Login via Telegram" onClose={onClose}>

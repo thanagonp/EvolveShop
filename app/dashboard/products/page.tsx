@@ -11,14 +11,14 @@ import { CldImage } from "next-cloudinary";
 import { Info, Edit, Trash } from "lucide-react";
 import { useToast } from "@/components/toasts/useToast";
 import ConfirmAlert from "@/components/alerts/ConfirmAlert";
-import { Product } from "@/lib/types/interface";
+import { Product, EditableProduct } from "@/lib/types/interface";
 
 export default function ProductPage() {
   
   const [isOpen, setIsOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<EditableProduct | undefined>(undefined);
   const { showToast } = useToast();
   const isFetched = useRef(false); // ✅ ใช้ useRef ป้องกันโหลดซ้ำ
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -42,7 +42,7 @@ export default function ProductPage() {
 
   const clearModal = () => {
     setIsOpen(false);
-    setSelectedProduct(null);
+    setSelectedProduct(undefined);
   }
 
   // 📌 ฟังก์ชันอัปโหลดรูปไปยัง Cloudinary
@@ -67,7 +67,7 @@ export default function ProductPage() {
     }
   };
   // 📌 ฟังก์ชันบันทึกสินค้า
-  const handleSaveProduct = async (product: any) => {
+  const handleSaveProduct = async (product: EditableProduct) => {
     try {
       console.log("🔍 Debug: ข้อมูลสินค้า", product);
   
@@ -127,19 +127,28 @@ export default function ProductPage() {
         });
         showToast("เพิ่มสินค้าสำเร็จ", "success");
       }
-  
+      fetchProducts();
+
       clearModal();
-      fetchProducts(); // ✅ โหลดรายการสินค้าใหม่
-    } catch (error: any) {
-      console.error("❌ เกิดข้อผิดพลาด:", error.response?.data || error.message);
+
+    } catch (error) {
+      console.error("❌ เกิดข้อผิดพลาด:", error);
     }
   };
   
   
-  const handleEditProduct = async (product: any) => {
-    setSelectedProduct(product);
-    handleOpenModal();
+  const handleEditProduct = async (product: Product) => {
+     // ✅ อัปเดตค่า images ก่อนส่งไปให้ Modal
+    axios.get(`${API_BASE_URL}/products/${product._id}`).then((response) => {
+      setSelectedProduct({
+        ...response.data, 
+        oldImages: response.data.images || [],
+        newImages: [],
+      });
+      setIsOpen(true);
+    });
   };
+  
 
   // 📌 เปิด Modal ยืนยันการลบสินค้า
 const handleOpenDeleteModal = (productId: string) => {
@@ -163,7 +172,6 @@ const handleDeleteProduct = async () => {
   setIsDeleteOpen(false); // ปิด Modal หลังจากลบสินค้า
 };
 
-  
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -177,14 +185,15 @@ const handleDeleteProduct = async () => {
       </button>
   
       {/* ✨ Modal สำหรับเพิ่มสินค้า */}
-      <AddProductModal 
-      isOpen={isOpen} 
-      onClose={() => { 
-        setIsOpen(false)
-        setSelectedProduct(null)
-      }} 
-       onSave={handleSaveProduct} 
-       product={selectedProduct} />
+      <AddProductModal
+      isOpen={isOpen}
+      onClose={() => {
+        setIsOpen(false);
+        setSelectedProduct(undefined); 
+      }}
+      onSave={handleSaveProduct}
+      product={selectedProduct ?? undefined}
+    />
   
       <div className="pt-4">
         <h1 className="text-3xl font-bold mb-6">🛍️ รายการสินค้า</h1>
@@ -221,7 +230,11 @@ const handleDeleteProduct = async () => {
                {/* 🔹 ปุ่ม Info (แสดงตลอด) */}
                <button
                 onClick={() => {
-                  setSelectedProduct(product);
+                  setSelectedProduct({
+                    ...product,
+                    oldImages: product.images, // กำหนด oldImages จาก images ที่มีอยู่
+                    newImages: [] // เริ่มต้นเป็นอาร์เรย์ว่าง
+                  });
                   setIsInfoOpen(true);
                 }}
                 className="absolute top-3 right-3 p-2 rounded-full shadow-md z-20
@@ -257,14 +270,13 @@ const handleDeleteProduct = async () => {
           ))}
         </div>
 
-  
         {/* 🏷️ ใช้ InfoModal แสดงรายละเอียดสินค้า */}
         {selectedProduct && (
           <InfoModal
             isOpen={isInfoOpen}
             onClose={() => { 
               setIsInfoOpen(false);
-              setSelectedProduct(null) }}
+              setSelectedProduct(undefined) }}
             product={selectedProduct}
           />
         )}

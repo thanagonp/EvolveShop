@@ -1,17 +1,19 @@
 "use client";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion} from "framer-motion";
+import { Product } from "@/lib/types/interface";
 
 interface InfoModalProps {
   isOpen: boolean;
   onClose: () => void;
-  product: any;
+  product: Product;
 }
 
 export default function InfoModal({ isOpen, onClose, product }: InfoModalProps) {
-  if (!isOpen || !product) return null;
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+ const [currentIndex, setCurrentIndex] = useState(0);
+
+if (!isOpen || !product) return null; // ✅ Hook ถูกเรียกก่อน return
 
   const handleNext = () => {
     setCurrentIndex((prevIndex) =>
