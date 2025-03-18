@@ -7,27 +7,31 @@ import { useToast } from "@/components/toasts/useToast";
 import axios from "axios";
 import { API_BASE_URL } from "@/config";
 import ConfirmAlert from "@/components/alerts/ConfirmAlert";
+import Image from "next/image";
+import { EditableProduct } from "@/lib/types/interface";
 
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (product: any) => void;
-  product?: any;
+  onSave: (product: EditableProduct) => void; // ✅ เปลี่ยน any เป็น EditableProduct
+  product?: EditableProduct; // ✅ ใช้ EditableProduct แทน any
 }
 
 export default function AddProductModal({ isOpen, onClose, onSave, product }: AddProductModalProps) {
-  const [productData, setProductData] = useState({
-    _id: "",  // ✅ เพิ่ม `_id` ตรงนี้
+  const [productData, setProductData] = useState<EditableProduct>({
+    _id: "",
     name: "",
-    price: "",
-    stock: "",
-    color: "",  
-    size: "",  
+    price: 0,
+    stock: 0,
+    color: "",
+    size: "",
     description: "",
-    oldImages: [] as string[], // ✅ เก็บรูปเดิม (URL)
-    newImages: [] as File[],  // ✅ เก็บรูปใหม่ (ไฟล์ที่อัปโหลด)
+    images: [],      // ✅ ต้องกำหนดค่า images ด้วย
+    oldImages: [],   // ✅ เก็บ URL ของรูปเดิม
+    newImages: [],   // ✅ เก็บไฟล์รูปใหม่
     status: "available",
   });
+
   const { showToast } = useToast();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [imageToDelete, setImageToDelete] = useState<{ index: number, isOld: boolean } | null>(null);
@@ -48,32 +52,35 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
   useEffect(() => {
     if (product) {
       setProductData({
-        _id: product._id || "", // ✅ เพิ่มการรับค่า `_id`
+        _id: product._id || "",
         name: product.name || "",
-        price: product.price || "",
-        stock: product.stock || "",
+        price: Number(product.price) || 0,
+        stock: Number(product.stock) || 0,
         color: product.color || "",
         size: product.size || "",
         description: product.description || "",
-        oldImages: product.images || [], 
+        images: product.images || [],  // ✅ กำหนดค่า images ด้วย
+        oldImages: product.images || [], // ✅ oldImages = images ที่โหลดมาจาก DB
         newImages: [],
         status: product.status || "available",
       });
     } else {
       setProductData({
-        _id: "", // ✅ รีเซ็ต `_id` เป็นค่าว่าง เมื่อเป็นสินค้าใหม่
+        _id: "",
         name: "",
-        price: "",
-        stock: "",
+        price: 0,
+        stock: 0,
         color: "",
         size: "",
         description: "",
+        images: [],  // ✅ images ต้องอยู่ในค่าเริ่มต้น
         oldImages: [],
         newImages: [],
         status: "available",
       });
     }
   }, [product]);
+  
   
   // 📌 ฟังก์ชันจัดการการเปลี่ยนแปลงค่าในฟอร์ม
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -86,7 +93,7 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
     const files = e.target.files;
     if (files) {
       if (productData.oldImages.length + productData.newImages.length + files.length > 5) {
-        alert("สามารถอัปโหลดได้สูงสุด 5 รูปภาพเท่านั้น");
+        showToast("ไม่สามารถอัปโหลดเกิน 5 รูป", "error");
         return;
       }
       setProductData((prev) => ({
@@ -137,23 +144,21 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
   // 📌 ฟังก์ชันบันทึกข้อมูลสินค้า
   const handleSave = () => {
     if (!productData.name || !productData.price || !productData.stock || !productData.color || !productData.size) {
-      alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+      showToast("กรุณากรอกข้อมูลให้ครบ", "error");
       return;
     }
   
     if (productData.oldImages.length + productData.newImages.length === 0) {
-      alert("กรุณาอัปโหลดรูปภาพอย่างน้อย 1 รูป");
+      showToast("กรุณาอัปโหลดรูปภาพ", "error");
       return;
     }
   
-    const updatedProduct = {
+    // ✅ ไม่รวม `newImages` เข้ากับ `oldImages` เพราะ `newImages` เป็นไฟล์
+    const updatedProduct: EditableProduct = {
       ...productData,
-      images: [...productData.oldImages, ...productData.newImages],
+      images: productData.oldImages, // ✅ ใช้ `oldImages` เท่านั้น
+      newImages: productData.newImages, // ✅ เก็บไฟล์ไว้แยกกัน
     };
-  
-    if (productData._id) { // ✅ ตรวจสอบว่า `_id` มีค่าหรือไม่
-      updatedProduct._id = productData._id;
-    }
   
     onSave(updatedProduct);
     onClose();
@@ -282,12 +287,12 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
 
           {/* Preview รูปภาพ */}
           <div className="mt-4 grid grid-cols-5 gap-2">
-           {/* 🔹 แสดงรูปภาพเดิม */}
+           {/* 🔹 แสดงรูปภาพเดิมจากฐานข้อมูล */}
             {productData.oldImages.map((url, index) => (
               <div key={`old-${index}`} className="relative group">
-                <img src={url} alt="Product Image" className="w-20 h-20 object-cover rounded-md" />
+                <Image src={url} alt="Product Image" width={100} height={100} className="object-cover rounded-md" />
                 <button
-                  onClick={() => confirmRemoveImage(index, true)} // ✅ ใช้ removeImage ฟังก์ชันเดียว
+                  onClick={() => confirmRemoveImage(index, true)}
                   className="absolute top-0 right-0 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
                 >
                   <XCircle className="w-4 h-4" />
@@ -295,12 +300,12 @@ export default function AddProductModal({ isOpen, onClose, onSave, product }: Ad
               </div>
             ))}
 
-            {/* 🔹 แสดงรูปที่อัปโหลดใหม่ */}
+            {/* 🔹 แสดงรูปที่อัปโหลดใหม่ (แบบชั่วคราว) */}
             {productData.newImages.map((file, index) => (
               <div key={`new-${index}`} className="relative group">
-                <img src={URL.createObjectURL(file)} alt="New Product Image" className="w-20 h-20 object-cover rounded-md" />
+                <Image src={URL.createObjectURL(file)} alt="New Product Image" width={100} height={100} className="object-cover rounded-md" />
                 <button
-                  onClick={() => confirmRemoveImage(index, true)} // ✅ ใช้ removeImage ฟังก์ชันเดียว
+                  onClick={() => confirmRemoveImage(index, false)}
                   className="absolute top-0 right-0 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
                 >
                   <XCircle className="w-4 h-4" />

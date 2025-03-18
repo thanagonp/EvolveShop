@@ -32,8 +32,6 @@ export default function ProductPage() {
     }
   }, []);
 
-  const handleOpenModal = () => setIsOpen(true);
-
   const fetchProducts = () => {
     axios.get(`${API_BASE_URL}/products/list`)
       .then((response) => setProducts([...response.data]))

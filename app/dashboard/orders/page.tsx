@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { CheckCircle, Eye, Truck, XCircle, MapPin, Phone, DollarSign, User } from "lucide-react";
 import { Order, OrderStatus } from "@/lib/types/interface";
 import BaseModal from "@/components/ui/Modal";
+import Image from "next/image";
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -183,10 +184,12 @@ export default function OrdersPage() {
             ❌
           </button>
           {selectedSlip && (
-            <img 
+            <Image 
               src={selectedSlip} 
               alt="Payment Slip" 
-              className="rounded-lg max-w-full max-h-[80vh] object-contain" 
+              className="rounded-lg max-w-full max-h-[80vh] object-contain"
+              width={500}
+              height={500} 
             />
           )}
         </div>
