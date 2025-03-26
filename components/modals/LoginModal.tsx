@@ -1,15 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-
+import { useRouter } from "next/navigation";
 import BaseModal from "@/components/ui/Modal";
 import { motion } from "framer-motion";
-
-declare global {
-  interface Window {
-    onTelegramAuth: (user: TelegramUser) => void;
-  }
-}
 
 const BOT_USERNAME = "MyEvolveShop_bot";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -17,6 +11,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+declare global {
+  interface Window {
+    onTelegramAuth: (user: TelegramUser) => void;
+  }
 }
 
 interface TelegramUser {
@@ -29,35 +29,8 @@ interface TelegramUser {
   hash: string;
 }
 
-// ✅ ต้องอยู่ข้างนอก useEffect เพื่อให้ widget เรียกใช้งานได้ทันที
-window.onTelegramAuth = async (user: TelegramUser) => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/auth/telegram/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(user),
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      if (data.isNew) {
-        localStorage.setItem("tempTelegramUser", JSON.stringify(data.tempUser));
-        window.location.href = data.redirectUrl;
-      } else {
-        localStorage.setItem("token", data.token);
-        window.location.href = data.redirectUrl;
-      }
-    } else {
-      alert("❌ Login failed: " + data.message);
-    }
-  } catch (err) {
-    console.error("❌ Telegram login error:", err);
-    alert("เกิดข้อผิดพลาดระหว่าง login");
-  }
-};
-
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+  const router = useRouter();
   const widgetContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -73,8 +46,38 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
       widgetContainerRef.current.innerHTML = "";
       widgetContainerRef.current.appendChild(script);
+
+      // ✅ สร้าง callback และผูกกับ window แบบใน React scope
+      window.onTelegramAuth = async (user: TelegramUser) => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/auth/telegram/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(user),
+          });
+
+          const data = await res.json();
+
+          if (data.success) {
+            if (data.isNew) {
+              localStorage.setItem("tempTelegramUser", JSON.stringify(data.tempUser));
+              onClose(); // ✅ ปิด modal
+              router.push(data.redirectUrl); // → /customer/confirm
+            } else {
+              localStorage.setItem("token", data.token);
+              onClose(); // ✅ ปิด modal
+              router.push(data.redirectUrl); // → /customer/store
+            }
+          } else {
+            alert("❌ Login failed: " + data.message);
+          }
+        } catch (err) {
+          console.error("❌ Telegram login error:", err);
+          alert("เกิดข้อผิดพลาดระหว่าง login");
+        }
+      };
     }
-  }, [isOpen]);
+  }, [isOpen, onClose, router]);
 
   return (
     <BaseModal isOpen={isOpen} title="🔑 Login via Telegram" onClose={onClose}>
