@@ -13,7 +13,6 @@ interface LoginModalProps {
   onClose: () => void;
 }
 
-// ✅ Telegram user type จาก Telegram Login Widget docs
 interface TelegramUser {
   id: number;
   first_name: string;
@@ -42,7 +41,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       widgetContainerRef.current.innerHTML = "";
       widgetContainerRef.current.appendChild(script);
 
-      // ✅ เพิ่ม handler ที่ปลอดภัยสำหรับ TypeScript
       (window as unknown as { onTelegramAuth: (user: TelegramUser) => void }).onTelegramAuth =
         async (user: TelegramUser) => {
           try {
@@ -55,8 +53,14 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             const data = await res.json();
 
             if (data.success) {
-              localStorage.setItem("token", data.token); // ✅ บันทึก token
-              router.push(data.redirectUrl); // ✅ ไปหน้าร้าน
+              if (data.isNew) {
+                localStorage.setItem("tempTelegramUser", JSON.stringify(data.tempUser));
+                router.push(data.redirectUrl); // /customer/confirm
+              } else {
+                localStorage.setItem("token", data.token);
+                onClose();
+                router.push(data.redirectUrl); // /customer/store
+              }
             } else {
               alert("❌ Login failed: " + data.message);
             }
@@ -78,7 +82,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         className="flex flex-col items-center space-y-4"
       >
         <p className="text-lg font-semibold">โปรดกดปุ่มด้านล่างเพื่อ Login</p>
-        <div ref={widgetContainerRef} className="flex justify-center"></div>
+        <div ref={widgetContainerRef} className="flex justify-center" />
       </motion.div>
     </BaseModal>
   );
