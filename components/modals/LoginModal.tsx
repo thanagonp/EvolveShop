@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import BaseModal from "@/components/ui/Modal";
 import { motion } from "framer-motion";
 
-const BOT_USERNAME = "MyEvolveShopBot";
+const BOT_USERNAME = "MyEvolveShop_bot";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 interface LoginModalProps {
@@ -46,7 +46,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       (window as unknown as { onTelegramAuth: (user: TelegramUser) => void }).onTelegramAuth =
         async (user: TelegramUser) => {
           try {
-            const res = await fetch(`${API_BASE_URL}/api/auth/telegram/login`, {
+            const res = await fetch(`${API_BASE_URL}/auth/telegram/login`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(user),
