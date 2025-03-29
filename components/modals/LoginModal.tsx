@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import BaseModal from "@/components/ui/Modal";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
 
 const BOT_USERNAME = "MyEvolveShop_bot";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -23,62 +22,69 @@ interface TelegramUser {
   hash: string;
 }
 
-// ✅ ประกาศให้ TypeScript รู้ว่า window มี onTelegramAuth
+// ✅ ใช้ type safe แบบนี้ แทน any
 declare global {
   interface Window {
-    onTelegramAuth: (user: TelegramUser) => void;
+    [key: string]: (user: TelegramUser) => void;
   }
 }
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
-  const router = useRouter();
-  const widgetContainerRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isOpen && widgetContainerRef.current) {
-      const script = document.createElement("script");
-      script.src = "https://telegram.org/js/telegram-widget.js?14";
-      script.setAttribute("data-telegram-login", BOT_USERNAME);
-      script.setAttribute("data-size", "large");
-      script.setAttribute("data-userpic", "false");
-      script.setAttribute("data-request-access", "write");
-      script.setAttribute("data-on-auth", "onTelegramAuth");
-      script.async = true;
+    if (!isOpen || !widgetRef.current) return;
 
-      widgetContainerRef.current.innerHTML = "";
-      widgetContainerRef.current.appendChild(script);
+    const container = widgetRef.current;
+    container.innerHTML = "";
 
-      // ✅ ไม่มี any อีกต่อไป
-      window.onTelegramAuth = async (user: TelegramUser) => {
-        try {
-          const res = await fetch(`${API_BASE_URL}/auth/telegram/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(user),
-          });
+    const callbackName = "tgAuthCallback_" + Math.random().toString(36).substring(2, 9);
 
-          const data = await res.json();
+    // ✅ ประกาศฟังก์ชันแบบมี type
+    window[callbackName] = async (user: TelegramUser) => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/auth/telegram/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(user),
+        });
 
-          if (data.success) {
-            if (data.isNew) {
-              localStorage.setItem("tempTelegramUser", JSON.stringify(data.tempUser));
-              onClose();
-              router.push(data.redirectUrl);
-            } else {
-              localStorage.setItem("token", data.token);
-              onClose();
-              router.push(data.redirectUrl);
-            }
+        const data = await res.json();
+
+        if (data.success) {
+          if (data.isNew) {
+            localStorage.setItem("tempTelegramUser", JSON.stringify(data.tempUser));
           } else {
-            alert("❌ Login failed: " + data.message);
+            localStorage.setItem("token", data.token);
           }
-        } catch (err) {
-          console.error("❌ Telegram login error:", err);
-          alert("เกิดข้อผิดพลาดระหว่าง login");
+
+          onClose();
+          window.location.href = data.redirectUrl;
+        } else {
+          alert("Login failed: " + data.message);
         }
-      };
-    }
-  }, [isOpen, onClose, router]);
+      } catch (err) {
+        console.error("Telegram login error:", err);
+        alert("เกิดข้อผิดพลาดระหว่าง login");
+      }
+    };
+
+    // ✅ inject script แบบปลอดภัย
+    const script = document.createElement("script");
+    script.src = "https://telegram.org/js/telegram-widget.js?14";
+    script.async = true;
+    script.setAttribute("data-telegram-login", BOT_USERNAME);
+    script.setAttribute("data-size", "large");
+    script.setAttribute("data-userpic", "false");
+    script.setAttribute("data-request-access", "write");
+    script.setAttribute("data-onauth", `${callbackName}(user)`);
+
+    container.appendChild(script);
+
+    return () => {
+      delete window[callbackName];
+    };
+  }, [isOpen, onClose]);
 
   return (
     <BaseModal isOpen={isOpen} title="🔑 Login via Telegram" onClose={onClose}>
@@ -90,7 +96,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         className="flex flex-col items-center space-y-4"
       >
         <p className="text-lg font-semibold">โปรดกดปุ่มด้านล่างเพื่อ Login</p>
-        <div ref={widgetContainerRef} className="flex justify-center" />
+        <div ref={widgetRef} className="flex justify-center" />
       </motion.div>
     </BaseModal>
   );
