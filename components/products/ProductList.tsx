@@ -7,23 +7,22 @@ import { API_BASE_URL } from "@/config";
 import { motion } from "framer-motion";
 
 interface Product {
-  _id: string;
-  name: string;
-  price: number;
-  stock: number;
-  images: string[];
-  color: string[];
-  size: string[];
-  description?: string;
-  status: "available" | "unavailable";
+    _id: string;
+    name: string;
+    price: number;
+    stock: number;
+    images: string[];
+    color: string[];
+    size: string[];
+    description?: string;
+    status: "available" | "unavailable";
 }
 
 export default function ProductList() {
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/products/list`)
+    axios.get(`${API_BASE_URL}/products/list`)
       .then((response) => {
         setProducts(response.data);
       })
@@ -32,26 +31,21 @@ export default function ProductList() {
 
   return (
     <motion.div
-      className="w-full max-w-screen-2xl mx-auto px-4"
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: "1rem",
-      }}
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 w-full"
+    initial={{ opacity: 0, y: 50 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6, ease: "easeOut" }}
     >
-      {products.map((product, index) => (
+    {products.map((product, index) => (
         <motion.div
-          key={product._id}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: index * 0.05, duration: 0.4 }}
+        key={product._id}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: index * 0.1, duration: 0.4 }}
         >
-          <ProductCard product={product} />
+        <ProductCard product={product} />
         </motion.div>
-      ))}
+    ))}
     </motion.div>
   );
 }
