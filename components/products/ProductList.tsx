@@ -30,7 +30,7 @@ export default function ProductList() {
   }, []);
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto px-4">
+    <div className="w-full max-w-screen-2xl mx-auto px-4"> {/* ✅ ครอบ Grid ด้วย container */}
       <motion.div
         className="grid w-full gap-4 [grid-template-columns:repeat(auto-fill,minmax(200px,1fr))]"
         initial={{ opacity: 0, y: 50 }}
@@ -50,5 +50,5 @@ export default function ProductList() {
         ))}
       </motion.div>
     </div>
-  );  
+  );
 }
