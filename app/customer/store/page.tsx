@@ -5,7 +5,7 @@ import ProductList from "@/components/products/ProductList";
 export default function StorePage() {
   return (
     <motion.div
-      className="w-full max-w-screen-2xl mx-auto px-4"
+      className="w-full px-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
