@@ -31,24 +31,21 @@ export default function ProductList() {
 
   return (
     <motion.div
-      className="w-full max-w-screen-2xl mx-auto px-4"
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
+    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 w-full"
+    initial={{ opacity: 0, y: 50 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6, ease: "easeOut" }}
     >
-      <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
-        {products.map((product, index) => (
-          <motion.div
-            key={product._id}
-            className="w-full"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.05, duration: 0.4 }}
-          >
-            <ProductCard product={product} />
-          </motion.div>
-        ))}
-      </div>
+    {products.map((product, index) => (
+        <motion.div
+        key={product._id}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: index * 0.1, duration: 0.4 }}
+        >
+        <ProductCard product={product} />
+        </motion.div>
+    ))}
     </motion.div>
   );
 }
