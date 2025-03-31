@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import BaseModal from "@/components/ui/Modal";
 import { motion } from "framer-motion";
 
 const BOT_USERNAME = "MyEvolveShop_bot";
+const BOT_ID = "7690060834"; // เปลี่ยนเป็น bot_id จริงของคุณ
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 interface LoginModalProps {
@@ -22,7 +23,6 @@ interface TelegramUser {
   hash: string;
 }
 
-// ✅ ใช้ type safe แบบนี้ แทน any
 declare global {
   interface Window {
     [key: string]: (user: TelegramUser) => void;
@@ -31,16 +31,20 @@ declare global {
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const widgetRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    if (!isOpen || !widgetRef.current) return;
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || !widgetRef.current || isMobile) return;
 
     const container = widgetRef.current;
     container.innerHTML = "";
 
     const callbackName = "tgAuthCallback_" + Math.random().toString(36).substring(2, 9);
 
-    // ✅ ประกาศฟังก์ชันแบบมี type
     window[callbackName] = async (user: TelegramUser) => {
       try {
         const res = await fetch(`${API_BASE_URL}/auth/telegram/login`, {
@@ -69,7 +73,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       }
     };
 
-    // ✅ inject script แบบปลอดภัย
     const script = document.createElement("script");
     script.src = "https://telegram.org/js/telegram-widget.js?14";
     script.async = true;
@@ -84,7 +87,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     return () => {
       delete window[callbackName];
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isMobile]);
 
   return (
     <BaseModal isOpen={isOpen} title="🔑 Login via Telegram" onClose={onClose}>
@@ -96,7 +99,19 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         className="flex flex-col items-center space-y-4"
       >
         <p className="text-lg font-semibold">โปรดกดปุ่มด้านล่างเพื่อ Login</p>
-        <div ref={widgetRef} className="flex justify-center" />
+
+        {isMobile ? (
+          <a
+            href={`https://oauth.telegram.org/auth?bot_id=${BOT_ID}&origin=${encodeURIComponent(
+              "https://evolve-shop.vercel.app/customer/telegram-auth"
+            )}&embed=1&request_access=write`}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            📲 ยืนยันผ่านแอป Telegram
+          </a>
+        ) : (
+          <div ref={widgetRef} className="flex justify-center" />
+        )}
       </motion.div>
     </BaseModal>
   );
