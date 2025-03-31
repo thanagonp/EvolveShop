@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import BaseModal from "@/components/ui/Modal";
 import { motion } from "framer-motion";
 
@@ -31,16 +31,20 @@ declare global {
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const widgetRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    if (!isOpen || !widgetRef.current) return;
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || !widgetRef.current || isMobile) return;
 
     const container = widgetRef.current;
     container.innerHTML = "";
 
     const callbackName = "tgAuthCallback_" + Math.random().toString(36).substring(2, 9);
 
-    // ✅ ประกาศฟังก์ชันแบบมี type
     window[callbackName] = async (user: TelegramUser) => {
       try {
         const res = await fetch(`${API_BASE_URL}/auth/telegram/login`, {
@@ -69,7 +73,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       }
     };
 
-    // ✅ inject script แบบปลอดภัย
     const script = document.createElement("script");
     script.src = "https://telegram.org/js/telegram-widget.js?14";
     script.async = true;
@@ -84,7 +87,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     return () => {
       delete window[callbackName];
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isMobile]);
 
   return (
     <BaseModal isOpen={isOpen} title="🔑 Login via Telegram" onClose={onClose}>
@@ -96,7 +99,19 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         className="flex flex-col items-center space-y-4"
       >
         <p className="text-lg font-semibold">โปรดกดปุ่มด้านล่างเพื่อ Login</p>
-        <div ref={widgetRef} className="flex justify-center" />
+
+        {isMobile ? (
+          <a
+            href={`https://t.me/${BOT_USERNAME}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            📲 เปิดแชทผ่าน Telegram
+          </a>
+        ) : (
+          <div ref={widgetRef} className="flex justify-center" />
+        )}
       </motion.div>
     </BaseModal>
   );
