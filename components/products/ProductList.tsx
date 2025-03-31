@@ -31,7 +31,7 @@ export default function ProductList() {
 
   return (
     <motion.div
-    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 w-full"
+    className="grid gap-4 w-full max-w-screen-2xl px-4 mx-auto [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]"
     initial={{ opacity: 0, y: 50 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.6, ease: "easeOut" }}
