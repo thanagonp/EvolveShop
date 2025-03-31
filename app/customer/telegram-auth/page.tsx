@@ -24,7 +24,14 @@ export default function TelegramAuthPage() {
 
     const userData: Partial<TelegramUser> = {};
     params.forEach((value, key) => {
-      (userData as any)[key] = value;
+      const typedKey = key as keyof TelegramUser;
+
+      // Convert numeric fields
+      if (typedKey === "id" || typedKey === "auth_date") {
+        userData[typedKey] = Number(value) as TelegramUser[typeof typedKey];
+      } else {
+        userData[typedKey] = value as TelegramUser[typeof typedKey];
+      }
     });
 
     if (!userData.id || !userData.hash) {
@@ -39,8 +46,8 @@ export default function TelegramAuthPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData),
     })
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (data.success) {
           if (data.isNew) {
             localStorage.setItem("tempTelegramUser", JSON.stringify(data.tempUser));
