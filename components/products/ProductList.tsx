@@ -30,9 +30,8 @@ export default function ProductList() {
   }, []);
 
   return (
-    <div className="w-full max-w-screen-2xl mx-auto px-4"> {/* ✅ ครอบ Grid ด้วย container */}
-      <motion.div
-        className="grid w-full gap-4 [grid-template-columns:repeat(auto-fill,minmax(200px,1fr))]"
+    <motion.div
+        className="grid w-full gap-4 grid-cols-[repeat(auto-fit,minmax(220px,1fr))]"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
@@ -40,7 +39,6 @@ export default function ProductList() {
         {products.map((product, index) => (
           <motion.div
             key={product._id}
-            className="w-full"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.1, duration: 0.4 }}
@@ -49,6 +47,5 @@ export default function ProductList() {
           </motion.div>
         ))}
       </motion.div>
-    </div>
   );
 }
